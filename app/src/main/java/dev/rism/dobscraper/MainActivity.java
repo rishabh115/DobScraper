@@ -4,9 +4,12 @@ import android.app.DatePickerDialog;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.AsyncTask;
+import android.support.design.widget.TabLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -16,7 +19,17 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import com.android.volley.Request;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.StringRequest;
+import com.daimajia.slider.library.SliderLayout;
+import com.daimajia.slider.library.SliderTypes.TextSliderView;
+import com.viewpagerindicator.CirclePageIndicator;
+
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
@@ -37,8 +50,12 @@ public class MainActivity extends AppCompatActivity {
     EditText picker;
     ListView lv;
     Calendar myCalendar;
-    ProgressBar progressBar;
+    ProgressBar progressBar,pagerProgress;
     DatePickerDialog.OnDateSetListener date;
+    PresentationViewPager sliderLayout;
+    CirclePageIndicator indicator;
+
+    String [] types=new String[]{"Events","Births","Deaths"};
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -47,6 +64,11 @@ public class MainActivity extends AppCompatActivity {
         picker= (EditText) findViewById(R.id.datePicker);
         lv= (ListView) findViewById(R.id.listView);
         progressBar=(ProgressBar) findViewById(R.id.progress);
+        pagerProgress= (ProgressBar) findViewById(R.id.progress_pager);
+        sliderLayout= (PresentationViewPager) findViewById(R.id.slider);
+         indicator = (CirclePageIndicator) findViewById(R.id.tabDots);
+
+        slideshow();
         myCalendar = Calendar.getInstance();
         date = new DatePickerDialog.OnDateSetListener() {
 
@@ -63,6 +85,10 @@ public class MainActivity extends AppCompatActivity {
         picker.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                picker.setError(null);
+                    InputMethodManager imm = (InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);
+                    imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+
                 new DatePickerDialog(MainActivity.this, date, myCalendar
                         .get(Calendar.YEAR), myCalendar.get(Calendar.MONTH),
                         myCalendar.get(Calendar.DAY_OF_MONTH)).show();
@@ -150,7 +176,7 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(String s) {
-            ArrayList<String> list=new ArrayList<>();
+            ArrayList<ListModel> list=new ArrayList<>();
             try
             {
                 int i,length;
@@ -162,13 +188,21 @@ public class MainActivity extends AppCompatActivity {
                 {
                     for (i=0;i<length;i++)
                     {
-                        String st;
+                        String st,st2;
                         JSONObject jsonObject1=jsonArray.getJSONObject(i).getJSONObject("person");
                         st=jsonObject1.getString("value");
-                        list.add((st.substring(st.lastIndexOf('/')+1,st.length())).replace('_',' '));
+                        JSONObject jsonObject2=jsonArray.getJSONObject(i).getJSONObject("thumbnail");
+                        st2=jsonObject2.getString("value");
+                        st2=st2.replace("http:","https:");
+                        Log.d("URL",st2);
+                        st=(st.substring(st.lastIndexOf('/')+1,st.length())).replace('_',' ');
+                        ListModel ob=new ListModel();
+                        ob.setName(st);
+                        ob.setImgurl(st2);
+                        list.add(ob);
                     }
                 }
-                ArrayAdapter<String> adapter=new ArrayAdapter<String>(MainActivity.this,android.R.layout.simple_list_item_1,list);
+                ListAdapter adapter=new ListAdapter(MainActivity.this,list);
                 lv.setAdapter(adapter);
             }
             catch (Exception e){}
@@ -178,10 +212,12 @@ public class MainActivity extends AppCompatActivity {
             lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                    String name = (String) parent.getItemAtPosition(position);
+                    ListModel ob = (ListModel) parent.getItemAtPosition(position);
+                    String name=ob.getName();
                     name.replace(' ','_');
                     Intent intent=new Intent(MainActivity.this,WebActivity.class);
                     intent.putExtra("tag",name);
+                    Log.d("tag",name);
                     startActivity(intent);
                 }
             });
@@ -193,5 +229,92 @@ public class MainActivity extends AppCompatActivity {
         SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.US);
 
         picker.setText(sdf.format(myCalendar.getTime()));
+    }
+    public void slideshow()
+    {
+        final ArrayList<SliderModel> list=new ArrayList<>();
+        JsonObjectRequest jsonObjectRequest=new JsonObjectRequest(Request.Method.GET, Config.TIH, null, new Response.Listener<JSONObject>() {
+            @Override
+            public void onResponse(JSONObject response) {
+                try {
+                    JSONObject dataObject=response.getJSONObject("data");
+                    for (String s:types)
+                    {
+                        JSONArray typeArray=dataObject.getJSONArray(s);
+                        if (list.size()>0)
+                        {
+                            list.clear();
+                        }
+                        Log.d("Size of list",typeArray.length()+"");
+                        for (int i=0;i<typeArray.length();i++)
+                        {
+                            JSONObject eventObject=typeArray.getJSONObject(i);
+                            String year=eventObject.getString("year");
+                            String text=eventObject.getString("text");
+                            Log.d("Values",year+","+text);
+                            SliderModel sliderModel=new SliderModel();
+                            sliderModel.setLink(null);
+                            sliderModel.setText(text);
+                            sliderModel.setType(s);
+                            sliderModel.setYear(year);
+                            list.add(sliderModel);
+                        }
+                    }
+
+                    sliderLayout.setDurationScroll(500);
+                    ViewPagerAdapter adapter=new ViewPagerAdapter(MainActivity.this,list);
+                    sliderLayout.setAdapter(adapter);
+                    indicator.setViewPager(sliderLayout);
+                    pagerProgress.setVisibility(View.INVISIBLE);
+                    Thread thread=new Thread(){
+                        @Override
+                        public void run() {
+                            int i=0;
+                            int size=list.size();
+                            while (i<size)
+                            {
+                                final int j=i;
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        if (sliderLayout.isActivated()||sliderLayout.isEnabled())
+                                        {
+
+                                                sliderLayout.setCurrentItem(j);
+
+                                    }}});
+
+                                try {
+                                    sleep(5000);
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                                finally {
+                                    i++;
+                                    if (i==size){i=0;}
+                                }
+
+                            }
+
+                        }
+                    };
+                    thread.start();
+                    //
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+
+            }
+        });
+        App.getInstance().addToRequestQueue(jsonObjectRequest);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
     }
 }

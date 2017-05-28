@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/pager_home"
+    android:background="@drawable/bg"
+    >
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="5dp"
+
+        android:layout_marginTop="15dp"
+
+        android:layout_marginBottom="15dp"
+        >
+    <dev.rism.dobscraper.CanaroTextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:gravity="center_horizontal"
+
+        android:text="Today in History"
+        />
+    <ImageView
+        android:layout_width="25dp"
+        android:layout_height="25dp"
+     android:layout_marginRight="10dp"
+        android:id="@+id/iv_share"
+        android:layout_alignParentRight="true"
+        android:src="@drawable/share"
+     />
+        </RelativeLayout>
+<TextView
+    android:layout_width="wrap_content"
+    android:layout_height="match_parent"
+    android:layout_gravity="center"
+    android:padding="5dp"
+    android:gravity="center"
+    android:id="@+id/tv_facts"
+    />
+</LinearLayout>

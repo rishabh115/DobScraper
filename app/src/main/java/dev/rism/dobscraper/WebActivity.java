@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.webkit.WebChromeClient;
@@ -24,7 +25,7 @@ public class WebActivity extends AppCompatActivity {
         String url;
         Intent intent = getIntent();
         final String tag=intent.getStringExtra("tag");
-        url=Config.wiki+tag;
+        url=Config.prefix+tag;
         webView= (WebView) findViewById(R.id.webView);
         webView.setWebChromeClient(new WebChromeClient() {
             public void onProgressChanged(WebView view, int progress)
@@ -42,6 +43,7 @@ public class WebActivity extends AppCompatActivity {
         webView.getSettings().setJavaScriptEnabled(true);
         webView.setWebViewClient(new WebViewClient());
         webView.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
+        Log.d("URL of wiki",url);
         webView.loadUrl(url);
 
     }
