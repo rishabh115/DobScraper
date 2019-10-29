@@ -12,6 +12,7 @@ public class CanaroTextView extends TextView {
 
     public CanaroTextView(Context context, AttributeSet attrs) {
         this(context, attrs, 0);
+        
     }
 
     public CanaroTextView(Context context, AttributeSet attrs, int defStyleAttr) {
